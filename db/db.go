@@ -10,7 +10,7 @@ import (
 var Db *sql.DB
 
 func init() {
-	// DB Conn
+	// DB Connection
 	var err error
 	Db, err = sql.Open("mysql", "root:root123@tcp(34.128.105.170)/finalprojectdb")
 	if err != nil {

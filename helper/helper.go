@@ -113,7 +113,7 @@ func AuthenticateRole(roleId int, next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// Get email
+// Get Email
 func GetUserByEmail(email string) (m.User, error) {
 	query := "SELECT id, email, name, password, role_id, access_token, active, created_at, updated_at FROM users WHERE email = ?"
 	var user m.User
@@ -135,14 +135,11 @@ func IsUserRole(userID int, roleID int) bool {
 	err := d.Db.QueryRow(query, userID).Scan(&userRoleID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			// User not found, return false
 			return false
 		}
 		fmt.Println("Error:", err)
 		return false
 	}
-
-	// Check if the user's role matches the specified roleID
 	return userRoleID == roleID
 }
 

@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// Current and Updated time helper
+// Current and Updated time
 type MySQLTime struct {
 	time.Time
 }
