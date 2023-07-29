@@ -24,5 +24,3 @@ func main() {
 	router.POST("/game/wish", c.AddWish)
 	http.ListenAndServe(":8080", router)
 }
-
-//
