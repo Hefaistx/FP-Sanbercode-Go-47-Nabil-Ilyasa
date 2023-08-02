@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"net/http"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -12,7 +13,7 @@ var Db *sql.DB
 func init() {
 	// DB Connection
 	var err error
-	Db, err = sql.Open("mysql", "root:root123@tcp(34.128.105.170)/finalprojectdb")
+	Db, err = sql.Open("mysql", "root:@tcp(localhost:3306)/finalprojectdb")
 	if err != nil {
 		panic(err)
 	}
@@ -21,6 +22,9 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-
 	fmt.Println("Connected to MySQL database!")
+}
+
+func RootHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(w, "Connected to MySQL database!")
 }

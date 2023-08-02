@@ -173,3 +173,12 @@ func GetUserIDFromToken(r *http.Request) (int, bool) {
 	userID := int(userIDFloat)
 	return userID, true
 }
+
+func IsGameExists(gameID int) (bool, error) {
+	var count int
+	err := d.Db.QueryRow("SELECT COUNT(*) FROM games WHERE id = ?", gameID).Scan(&count)
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}

@@ -27,6 +27,17 @@ func Register(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 	defer r.Body.Close()
+	var count int
+	err := d.Db.QueryRow("SELECT COUNT(*) FROM users WHERE email = ?", user.Email).Scan(&count)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if count > 0 {
+		http.Error(w, "Email already registered", http.StatusConflict)
+		return
+	}
 	if user.Name == "" || user.Email == "" || user.Password == "" {
 		http.Error(w, "Fill all the blank!", http.StatusBadRequest)
 		return
@@ -122,6 +133,78 @@ func Login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	json.NewEncoder(w).Encode(response)
 }
 
+func GetUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	claims, err := h.Authenticate(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	_, ok := claims["id"].(float64)
+	if !ok {
+		http.Error(w, "Invalid token claims", http.StatusUnauthorized)
+		return
+	}
+
+	// Implement logic to filter data based on user ID or any other criteria, if needed.
+	// For example:
+	// userID := int(claims["id"].(float64))
+	// rows, err := d.Db.Query("SELECT name, role_id FROM users WHERE id = ?", userID)
+	rows, err := d.Db.Query("SELECT name, role_id FROM users")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var users []m.UserResponse
+	for rows.Next() {
+		var user m.UserResponse
+		if err := rows.Scan(&user.Name, &user.RoleId); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		users = append(users, user)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(users)
+}
+
+func GetUserDetail(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+
+	userID, err := strconv.Atoi(ps.ByName("id"))
+	if err != nil {
+		http.Error(w, "Invalid userID", http.StatusBadRequest)
+		return
+	}
+
+	claims, err := h.Authenticate(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	//Check if the role claim exists and is equal to 2 (admin role)
+	if role, ok := claims["role"].(float64); !ok || role != 2 {
+		http.Error(w, "Access denied", http.StatusForbidden)
+		return
+	}
+
+	var existingUser m.User
+	err = d.Db.QueryRow("SELECT id, email, name, password, role_id, access_token, active, created_at, updated_at FROM users WHERE id = ?", userID).
+		Scan(&existingUser.ID, &existingUser.Email, &existingUser.Name, &existingUser.Password, &existingUser.RoleId, &existingUser.AccessToken, &existingUser.Active, &existingUser.CreatedAt, &existingUser.UpdatedAt)
+	if err == sql.ErrNoRows {
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	} else if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(existingUser)
+}
+
 // @Summary Delete user
 // @Description Delete a user by its ID (only accessible by admin)
 // @Param id path int true "User ID to be deleted"
@@ -164,6 +247,91 @@ func DeleteUser(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	}
 	response := map[string]string{
 		"message": "User successfully deleted",
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+func UpdateUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	var user m.User
+	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+
+	// Authenticate and extract UserID from JWT
+	claims, err := h.Authenticate(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+	var existingUser m.User
+
+	userIDFloat, ok := claims["id"].(float64)
+	if !ok {
+		http.Error(w, "Invalid token claims", http.StatusUnauthorized)
+		return
+	}
+	userID := int(userIDFloat)
+
+	err = d.Db.QueryRow("SELECT id, email, name, password, role_id, access_token, active, created_at, updated_at FROM users WHERE id = ?", userID).
+		Scan(&existingUser.ID, &existingUser.Email, &existingUser.Name, &existingUser.Password, &existingUser.RoleId, &existingUser.AccessToken, &existingUser.Active, &existingUser.CreatedAt, &existingUser.UpdatedAt)
+	if err == sql.ErrNoRows {
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	} else if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	createdAt := m.NewMySQLTime(time.Now())
+
+	_, err = d.Db.Exec("UPDATE users SET name = ?, password = ?, updated_at = ? WHERE id = ?",
+		user.Name, user.Password, createdAt, userID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	existingUser.Name = user.Name
+	existingUser.Password = user.Password
+	existingUser.UpdatedAt = createdAt
+
+	response := map[string]interface{}{
+		"message": "User data updated",
+		"review":  existingUser,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+func Logout(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	claims, err := h.Authenticate(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	userIDFloat, ok := claims["id"].(float64)
+	if !ok {
+		http.Error(w, "Invalid token claims", http.StatusUnauthorized)
+		return
+	}
+
+	userID := int(userIDFloat)
+
+	// Clear the access token and set active to false for the user in the database
+	_, err = d.Db.Exec("UPDATE users SET access_token = '', active = false WHERE id = ?", userID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	response := map[string]string{
+		"message": "Logout successful",
 	}
 
 	w.Header().Set("Content-Type", "application/json")

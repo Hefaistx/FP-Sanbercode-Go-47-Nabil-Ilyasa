@@ -1,0 +1,11 @@
+todo final project revision:
+ROLE:
+Create, Get, Delete OK
+USER:
+Register, Get all, Get by id, Login, Logout, Delete (Need to check active from login and logout)
+REVIEW:
+Add, Update, Delete, Get (Need checking)
+WISH:
+Add, Get, Delete (Need checking)
+GAME:
+Add, Get,Get Detail, Delete, Update (Need checking)

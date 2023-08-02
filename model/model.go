@@ -97,3 +97,20 @@ type Wishlist struct {
 	CreatedAt MySQLTime `json:"created_at"`
 	UpdatedAt MySQLTime `json:"updated_at"`
 }
+
+type UserResponse struct {
+	Name   string `json:"name"`
+	RoleId int    `json:"role_id"`
+}
+
+type GameResponse struct {
+	Title string `json:"title"`
+}
+
+type WishlistWithGameTitle struct {
+	ID        int       `json:"id"`
+	UserID    int       `json:"user_id"`
+	GameTitle string    `json:"game_title"`
+	CreatedAt MySQLTime `json:"created_at"`
+	UpdatedAt MySQLTime `json:"updated_at"`
+}
