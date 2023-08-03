@@ -1,0 +1,921 @@
+definitions:
+  model.Game:
+    properties:
+      created_at:
+        $ref: '#/definitions/model.MySQLTime'
+      description:
+        type: string
+      developer:
+        type: string
+      id:
+        type: integer
+      release_date:
+        type: string
+      title:
+        type: string
+      updated_at:
+        $ref: '#/definitions/model.MySQLTime'
+    type: object
+  model.GameResponse:
+    properties:
+      title:
+        type: string
+    type: object
+  model.MySQLTime:
+    properties:
+      time.Time:
+        type: string
+    type: object
+  model.Review:
+    properties:
+      created_at:
+        $ref: '#/definitions/model.MySQLTime'
+      description:
+        type: string
+      game_id:
+        type: integer
+      id:
+        type: integer
+      rating:
+        type: integer
+      updated_at:
+        $ref: '#/definitions/model.MySQLTime'
+      user_id:
+        type: integer
+    type: object
+  model.Role:
+    properties:
+      created_at:
+        $ref: '#/definitions/model.MySQLTime'
+      id:
+        type: integer
+      role_name:
+        type: string
+      updated_at:
+        $ref: '#/definitions/model.MySQLTime'
+    type: object
+  model.User:
+    properties:
+      access_token:
+        type: string
+      active:
+        type: boolean
+      created_at:
+        $ref: '#/definitions/model.MySQLTime'
+      email:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      password:
+        type: string
+      role_id:
+        type: integer
+      updated_at:
+        $ref: '#/definitions/model.MySQLTime'
+    type: object
+  model.UserResponse:
+    properties:
+      name:
+        type: string
+      role_id:
+        type: integer
+    type: object
+  model.Wishlist:
+    properties:
+      created_at:
+        $ref: '#/definitions/model.MySQLTime'
+      game_id:
+        type: integer
+      id:
+        type: integer
+      updated_at:
+        $ref: '#/definitions/model.MySQLTime'
+      user_id:
+        type: integer
+    type: object
+  model.WishlistWithGameTitle:
+    properties:
+      created_at:
+        $ref: '#/definitions/model.MySQLTime'
+      game_title:
+        type: string
+      id:
+        type: integer
+      updated_at:
+        $ref: '#/definitions/model.MySQLTime'
+      user_id:
+        type: integer
+    type: object
+info:
+  contact: {}
+paths:
+  /games:
+    get:
+      description: Get a list of game titles
+      responses:
+        "200":
+          description: List of game titles" // Sesuaikan dengan tipe m.GameResponse
+          schema:
+            items:
+              $ref: '#/definitions/model.GameResponse'
+            type: array
+        "500":
+          description: Internal server error" (when there is a problem with the database)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get games
+    post:
+      description: Add a new game with the provided information (admin only)
+      parameters:
+      - description: Game object that needs to be added
+        in: body
+        name: game
+        required: true
+        schema:
+          $ref: '#/definitions/model.Game'
+      responses:
+        "200":
+          description: Game added
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid Release Date format. Use 'YYYY-MM-DD'." (when the provided
+            Release Date has an invalid format)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized" (when the provided JWT token is invalid or missing)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Access denied" (when the user does not have admin role)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error" (when there is a problem with the database)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Add new game
+  /games/{id}:
+    delete:
+      description: Delete a game by its ID (admin only)
+      parameters:
+      - description: Game ID to be deleted
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: Game successfully deleted
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid game ID" (when the provided game ID in the URL is not
+            a valid integer)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized" (when the provided JWT token is invalid or missing)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Access denied" (when the user does not have admin role)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Game not found" (when the requested game ID does not exist
+            in the database)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error" (when there is a problem with the database)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Delete game
+    get:
+      description: Get detailed information about a specific game
+      parameters:
+      - description: Game ID to be retrieved
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: Game details
+          schema:
+            $ref: '#/definitions/model.Game'
+        "400":
+          description: Invalid game ID" (when the provided game ID in the URL is not
+            a valid integer)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Game not found" (when the requested game ID does not exist
+            in the database)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error" (when there is a problem with the database)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get game details
+    post:
+      description: Update game data (title, developer, release date, and description)
+        (admin only)
+      parameters:
+      - description: Game ID to be updated
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Game object that contains updated game data
+        in: body
+        name: game
+        required: true
+        schema:
+          $ref: '#/definitions/model.Game'
+      responses:
+        "200":
+          description: Game data updated
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid Release Date format. Use 'YYYY-MM-DD'." (when the provided
+            Release Date has an invalid format)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized" (when the provided JWT token is invalid or missing)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Access denied" (when the user does not have admin role)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Game not found" (when the requested game ID does not exist
+            in the database)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error" (when there is a problem with the database)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Update game
+  /login:
+    post:
+      description: Log in user with the provided credentials
+      parameters:
+      - description: User object that contains login credentials
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/model.User'
+      responses:
+        "200":
+          description: Login successful
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request body" (when the request body does not contain
+            valid JSON or is missing required fields)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized" (when the provided credentials are incorrect)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to update access token" (when there is an error updating
+            the access token in the database)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Login user
+  /logout:
+    post:
+      description: Log out user by clearing the access token
+      responses:
+        "200":
+          description: Logout successful
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized" (when the provided JWT token is invalid or missing)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error" (when there is a problem with the database)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Logout user
+  /register:
+    post:
+      description: Register a new user with the provided information
+      parameters:
+      - description: User object that needs to be registered
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/model.User'
+      responses:
+        "200":
+          description: Registration successful!
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Password should be at least 8 characters" (when the provided
+            password is less than 8 characters)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Email already registered" (when the provided email is already
+            registered)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error" (when there is a problem with the database
+            or password hashing)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Register new user
+  /review:
+    get:
+      description: Get a list of all reviews
+      responses:
+        "200":
+          description: List of reviews
+          schema:
+            items:
+              $ref: '#/definitions/model.Review'
+            type: array
+        "401":
+          description: Unauthorized" (when the JWT token is missing or invalid)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error" (when there is a problem with the database)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get all reviews
+    post:
+      description: Update an existing review for a game by the authenticated user
+      parameters:
+      - description: Review object that needs to be updated
+        in: body
+        name: review
+        required: true
+        schema:
+          $ref: '#/definitions/model.Review'
+      responses:
+        "200":
+          description: Review updated
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Rating should be 0-10" (when the updated review rating is greater
+            than 10)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized" (when the JWT token is missing or invalid)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Review not found" (when the specified review ID does not exist
+            in the database)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error" (when there is a problem with the database)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Update review
+  /review/{id}:
+    delete:
+      description: Delete a review by its ID
+      parameters:
+      - description: Review ID to delete
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: Review successfully deleted
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid review ID" (when the review ID in the URL path is not
+            a valid integer)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized" (when the JWT token is missing or invalid)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Review not found" (when the specified review ID does not exist
+            in the database)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error" (when there is a problem with the database)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Delete review by ID
+  /role:
+    get:
+      description: Get a list of all roles
+      responses:
+        "200":
+          description: List of roles
+          schema:
+            items:
+              $ref: '#/definitions/model.Role'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get all roles
+    post:
+      description: Create a new role with the specified role name
+      parameters:
+      - description: Role object that needs to be created
+        in: body
+        name: role
+        required: true
+        schema:
+          $ref: '#/definitions/model.Role'
+      responses:
+        "200":
+          description: Role created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request body
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Access denied
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Role already exists
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Create new role
+  /role/{id}:
+    delete:
+      description: Delete a role by its ID
+      parameters:
+      - description: Role ID to delete
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: Role successfully deleted
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid role ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Access denied
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Role not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Delete role by ID
+  /users:
+    get:
+      description: Get a list of users with limited information based on the user's
+        role
+      responses:
+        "200":
+          description: List of users
+          schema:
+            items:
+              $ref: '#/definitions/model.UserResponse'
+            type: array
+        "401":
+          description: Unauthorized" (when the provided JWT token is invalid or missing)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error" (when there is a problem with the database)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get users
+    put:
+      description: Update user data (name and password)
+      parameters:
+      - description: User object that contains updated user data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/model.User'
+      responses:
+        "200":
+          description: User data updated
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request body" (when the request body does not contain
+            valid JSON or is missing required fields)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized" (when the provided JWT token is invalid or missing)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error" (when there is a problem with the database)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Update user
+  /users/{id}:
+    delete:
+      description: Delete a user by its ID (only accessible by admin)
+      parameters:
+      - description: User ID to be deleted
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: User successfully deleted
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid userID" (when the provided user ID in the URL is not
+            a valid integer)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized" (when the provided JWT token is invalid or missing)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Access denied" (when the user does not have admin role)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: User not found" (when the requested user ID does not exist
+            in the database)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error" (when there is a problem with the database)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Delete user
+    get:
+      description: Get detailed information about a specific user (only accessible
+        by admin)
+      parameters:
+      - description: User ID to be retrieved
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: User details
+          schema:
+            $ref: '#/definitions/model.User'
+        "400":
+          description: Invalid userID" (when the provided user ID in the URL is not
+            a valid integer)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized" (when the provided JWT token is invalid or missing)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Access denied" (when the user does not have admin role)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: User not found" (when the requested user ID does not exist
+            in the database)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error" (when there is a problem with the database)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get user details
+  /wishlist:
+    get:
+      description: Get a list of all wishlist items for the authenticated user
+      responses:
+        "200":
+          description: List of wishlist items
+          schema:
+            items:
+              $ref: '#/definitions/model.WishlistWithGameTitle'
+            type: array
+        "401":
+          description: Unauthorized" (when the JWT token is missing or invalid)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error" (when there is a problem with the database)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get all wishlist items
+    post:
+      description: Add a new wishlist item for the authenticated user
+      parameters:
+      - description: Wishlist object that needs to be added
+        in: body
+        name: wishlist
+        required: true
+        schema:
+          $ref: '#/definitions/model.Wishlist'
+      responses:
+        "200":
+          description: Wishlist item added
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: The Game is already exists in your list" (when the game is
+            already present in the user's wishlist)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized" (when the JWT token is missing or invalid)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error" (when there is a problem with the database)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Add new wishlist
+  /wishlist/{id}:
+    delete:
+      description: Delete a wishlist item by its ID
+      parameters:
+      - description: Wishlist item ID to delete
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: Wishlist item successfully deleted
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid wishlist item ID" (when the wishlist item ID in the
+            URL path is not a valid integer)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized" (when the JWT token is missing or invalid)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Wishlist item not found" (when the specified wishlist item
+            ID does not exist in the database)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error" (when there is a problem with the database)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Delete wishlist item by ID
+swagger: "2.0"

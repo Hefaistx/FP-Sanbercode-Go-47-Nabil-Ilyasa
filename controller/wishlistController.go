@@ -13,11 +13,17 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
+// AddWish handles the HTTP request to add a new wishlist item for the authenticated user.
 // @Summary Add new wishlist
 // @Description Add a new wishlist item for the authenticated user
-// @Param wishlist body Wishlist true "Wishlist object that needs to be added"
+// @Param wishlist body m.Wishlist true "Wishlist object that needs to be added"
 // @Security ApiKeyAuth
 // @Success 200 {object} map[string]interface{} "Wishlist item added"
+// @Failure 400 {object} map[string]string "Invalid request body" (when the request body does not contain valid JSON or is missing required fields)
+// @Failure 401 {object} map[string]string "Unauthorized" (when the JWT token is missing or invalid)
+// @Failure 400 {object} map[string]string "Invalid game ID" (when the game ID in the wishlist is not valid)
+// @Failure 400 {object} map[string]string "The Game is already exists in your list" (when the game is already present in the user's wishlist)
+// @Failure 500 {object} map[string]string "Internal server error" (when there is a problem with the database)
 // @Router /wishlist [post]
 func AddWish(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var wishlist m.Wishlist
@@ -85,6 +91,15 @@ func AddWish(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	json.NewEncoder(w).Encode(response)
 }
 
+// GetWish handles the HTTP request to fetch all wishlist items for the authenticated user.
+// Only authenticated users can access this endpoint.
+// @Summary Get all wishlist items
+// @Description Get a list of all wishlist items for the authenticated user
+// @Security ApiKeyAuth
+// @Success 200 {object} []m.WishlistWithGameTitle "List of wishlist items"
+// @Failure 401 {object} map[string]string "Unauthorized" (when the JWT token is missing or invalid)
+// @Failure 500 {object} map[string]string "Internal server error" (when there is a problem with the database)
+// @Router /wishlist [get]
 func GetWish(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	claims, err := h.Authenticate(r)
 	if err != nil {
@@ -116,6 +131,19 @@ func GetWish(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(wishes)
 }
+
+// DeleteWish handles the HTTP request to delete a wishlist item by its ID.
+// Only authenticated users can delete their own wishlist items.
+// @Summary Delete wishlist item by ID
+// @Description Delete a wishlist item by its ID
+// @Param id path int true "Wishlist item ID to delete"
+// @Security ApiKeyAuth
+// @Success 200 {object} map[string]string "Wishlist item successfully deleted"
+// @Failure 400 {object} map[string]string "Invalid wishlist item ID" (when the wishlist item ID in the URL path is not a valid integer)
+// @Failure 401 {object} map[string]string "Unauthorized" (when the JWT token is missing or invalid)
+// @Failure 404 {object} map[string]string "Wishlist item not found" (when the specified wishlist item ID does not exist in the database)
+// @Failure 500 {object} map[string]string "Internal server error" (when there is a problem with the database)
+// @Router /wishlist/{id} [delete]
 func DeleteWish(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	wishID, err := strconv.Atoi(ps.ByName("id"))
 	if err != nil {

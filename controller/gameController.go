@@ -13,11 +13,18 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
+// AddGame handles the HTTP request to add a new game with the provided information (admin only).
 // @Summary Add new game
 // @Description Add a new game with the provided information (admin only)
-// @Param game body Game true "Game object that needs to be added"
+// @Param game body m.Game true "Game object that needs to be added"
 // @Security ApiKeyAuth
 // @Success 200 {object} map[string]interface{} "Game added"
+// @Failure 400 {object} map[string]string "Invalid request body" (when the request body does not contain valid JSON or is missing required fields)
+// @Failure 401 {object} map[string]string "Unauthorized" (when the provided JWT token is invalid or missing)
+// @Failure 403 {object} map[string]string "Access denied" (when the user does not have admin role)
+// @Failure 400 {object} map[string]string "Fill all the blank!" (when title, developer, or description is empty)
+// @Failure 400 {object} map[string]string "Invalid Release Date format. Use 'YYYY-MM-DD'." (when the provided Release Date has an invalid format)
+// @Failure 500 {object} map[string]string "Internal server error" (when there is a problem with the database)
 // @Router /games [post]
 func AddGame(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var game m.Game
@@ -73,6 +80,13 @@ func AddGame(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
+
+// GetGames retrieves a list of game titles.
+// @Summary Get games
+// @Description Get a list of game titles
+// @Success 200 {object} []m.GameResponse "List of game titles" // Sesuaikan dengan tipe m.GameResponse
+// @Failure 500 {object} map[string]string "Internal server error" (when there is a problem with the database)
+// @Router /games [get]
 func GetGames(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	rows, err := d.Db.Query("SELECT title from games")
 	if err != nil {
@@ -91,6 +105,16 @@ func GetGames(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(games)
 }
+
+// GetGameDetail retrieves detailed information about a specific game.
+// @Summary Get game details
+// @Description Get detailed information about a specific game
+// @Param id path int true "Game ID to be retrieved"
+// @Success 200 {object} m.Game "Game details"
+// @Failure 400 {object} map[string]string "Invalid game ID" (when the provided game ID in the URL is not a valid integer)
+// @Failure 404 {object} map[string]string "Game not found" (when the requested game ID does not exist in the database)
+// @Failure 500 {object} map[string]string "Internal server error" (when there is a problem with the database)
+// @Router /games/{id} [get]
 func GetGameDetail(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	gameID, err := strconv.Atoi(ps.ByName("id"))
 	if err != nil {
@@ -110,6 +134,19 @@ func GetGameDetail(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 	w.Header().Set("Content_Type", "application/json")
 	json.NewEncoder(w).Encode(existingGame)
 }
+
+// DeleteGame handles the HTTP request to delete a game by its ID (admin only).
+// @Summary Delete game
+// @Description Delete a game by its ID (admin only)
+// @Param id path int true "Game ID to be deleted"
+// @Security ApiKeyAuth
+// @Success 200 {object} map[string]string "Game successfully deleted"
+// @Failure 400 {object} map[string]string "Invalid game ID" (when the provided game ID in the URL is not a valid integer)
+// @Failure 401 {object} map[string]string "Unauthorized" (when the provided JWT token is invalid or missing)
+// @Failure 403 {object} map[string]string "Access denied" (when the user does not have admin role)
+// @Failure 404 {object} map[string]string "Game not found" (when the requested game ID does not exist in the database)
+// @Failure 500 {object} map[string]string "Internal server error" (when there is a problem with the database)
+// @Router /games/{id} [delete]
 func DeleteGame(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	claims, err := h.Authenticate(r)
 	if err != nil {
@@ -151,6 +188,22 @@ func DeleteGame(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	json.NewEncoder(w).Encode(response)
 }
 
+// UpdateGame handles the HTTP request to update game data (admin only).
+// @Summary Update game
+// @Description Update game data (title, developer, release date, and description) (admin only)
+// @Security ApiKeyAuth
+// @Param id path int true "Game ID to be updated"
+// @Param game body m.Game true "Game object that contains updated game data" // Sesuaikan dengan tipe m.Game
+// @Success 200 {object} map[string]interface{} "Game data updated"
+// @Failure 400 {object} map[string]string "Invalid game ID" (when the provided game ID in the URL is not a valid integer)
+// @Failure 400 {object} map[string]string "Invalid request body" (when the request body does not contain valid JSON or is missing required fields)
+// @Failure 401 {object} map[string]string "Unauthorized" (when the provided JWT token is invalid or missing)
+// @Failure 403 {object} map[string]string "Access denied" (when the user does not have admin role)
+// @Failure 400 {object} map[string]string "Fill all the blank!" (when title, developer, or description is empty)
+// @Failure 400 {object} map[string]string "Invalid Release Date format. Use 'YYYY-MM-DD'." (when the provided Release Date has an invalid format)
+// @Failure 404 {object} map[string]string "Game not found" (when the requested game ID does not exist in the database)
+// @Failure 500 {object} map[string]string "Internal server error" (when there is a problem with the database)
+// @Router /games/{id} [post]
 func UpdateGame(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	// Authenticate and extract UserID from JWT
 	claims, err := h.Authenticate(r)

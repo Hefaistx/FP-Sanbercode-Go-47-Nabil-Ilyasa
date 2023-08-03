@@ -13,11 +13,19 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
+// AddReview handles the HTTP request to add a new review for a game by the authenticated user.
 // @Summary Add new review
 // @Description Add a new review for a game by the authenticated user
-// @Param review body Review true "Review object that needs to be added"
+// @Param review body m.Review true "Review object that needs to be added"
 // @Security ApiKeyAuth
 // @Success 200 {object} map[string]interface{} "Review added"
+// @Failure 400 {object} map[string]string "Invalid request body" (when the request body does not contain valid JSON or is missing required fields)
+// @Failure 401 {object} map[string]string "Unauthorized" (when the JWT token is missing or invalid)
+// @Failure 400 {object} map[string]string "Nothing found with given id" (when the specified game ID in the review does not exist)
+// @Failure 409 {object} map[string]string "You can only make one review per game" (when the user has already reviewed the specified game)
+// @Failure 400 {object} map[string]string "Write something, please" (when the review description is empty)
+// @Failure 400 {object} map[string]string "Rating should be 0-10" (when the review rating is greater than 10)
+// @Failure 500 {object} map[string]string "Internal server error" (when there is a problem with the database)
 // @Router /review [post]
 func AddReview(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var review m.Review
@@ -98,6 +106,20 @@ func AddReview(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
+
+// UpdateReview handles the HTTP request to update an existing review for a game by the authenticated user.
+// @Summary Update review
+// @Description Update an existing review for a game by the authenticated user
+// @Param review body m.Review true "Review object that needs to be updated"
+// @Security ApiKeyAuth
+// @Success 200 {object} map[string]interface{} "Review updated"
+// @Failure 400 {object} map[string]string "Invalid request body" (when the request body does not contain valid JSON or is missing required fields)
+// @Failure 401 {object} map[string]string "Unauthorized" (when the JWT token is missing or invalid)
+// @Failure 404 {object} map[string]string "Review not found" (when the specified review ID does not exist in the database)
+// @Failure 400 {object} map[string]string "Write something, please" (when the updated review description is empty)
+// @Failure 400 {object} map[string]string "Rating should be 0-10" (when the updated review rating is greater than 10)
+// @Failure 500 {object} map[string]string "Internal server error" (when there is a problem with the database)
+// @Router /review [post]
 func UpdateReview(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var review m.Review
 	if err := json.NewDecoder(r.Body).Decode(&review); err != nil {
@@ -162,6 +184,15 @@ func UpdateReview(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	json.NewEncoder(w).Encode(response)
 }
 
+// GetReview handles the HTTP request to fetch all reviews from the database.
+// Only authenticated users can access this endpoint.
+// @Summary Get all reviews
+// @Description Get a list of all reviews
+// @Security ApiKeyAuth
+// @Success 200 {object} []m.Review "List of reviews"
+// @Failure 401 {object} map[string]string "Unauthorized" (when the JWT token is missing or invalid)
+// @Failure 500 {object} map[string]string "Internal server error" (when there is a problem with the database)
+// @Router /review [get]
 func GetReview(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	claims, err := h.Authenticate(r)
 	if err != nil {
@@ -190,6 +221,19 @@ func GetReview(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(reviews)
 }
+
+// DeleteReview handles the HTTP request to delete a review by its ID.
+// Only authenticated users can delete their own reviews.
+// @Summary Delete review by ID
+// @Description Delete a review by its ID
+// @Param id path int true "Review ID to delete"
+// @Security ApiKeyAuth
+// @Success 200 {object} map[string]string "Review successfully deleted"
+// @Failure 400 {object} map[string]string "Invalid review ID" (when the review ID in the URL path is not a valid integer)
+// @Failure 401 {object} map[string]string "Unauthorized" (when the JWT token is missing or invalid)
+// @Failure 404 {object} map[string]string "Review not found" (when the specified review ID does not exist in the database)
+// @Failure 500 {object} map[string]string "Internal server error" (when there is a problem with the database)
+// @Router /review/{id} [delete]
 func DeleteReview(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	userID, err := strconv.Atoi(ps.ByName("id"))
 	if err != nil {

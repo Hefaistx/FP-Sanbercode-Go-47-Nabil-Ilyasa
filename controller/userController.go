@@ -18,8 +18,14 @@ var user m.User
 
 // @Summary Register new user
 // @Description Register a new user with the provided information
-// @Param user body User true "User object that needs to be registered"
+// @Param user body m.User true "User object that needs to be registered"
 // @Success 200 {object} map[string]interface{} "Registration successful!"
+// @Failure 400 {object} map[string]string "Invalid request body" (when the request body does not contain valid JSON or is missing required fields)
+// @Failure 409 {object} map[string]string "Email already registered" (when the provided email is already registered)
+// @Failure 400 {object} map[string]string "Fill all the blank!" (when name, email, or password is empty)
+// @Failure 400 {object} map[string]string "Invalid Email" (when the provided email is not a valid email address)
+// @Failure 400 {object} map[string]string "Password should be at least 8 characters" (when the provided password is less than 8 characters)
+// @Failure 500 {object} map[string]string "Internal server error" (when there is a problem with the database or password hashing)
 // @Router /register [post]
 func Register(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
@@ -91,10 +97,13 @@ func Register(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 // @Summary Login user
 // @Description Log in user with the provided credentials
-// @Param user body User true "User object that contains login credentials"
+// @Param user body m.User true "User object that contains login credentials"
 // @Success 200 {object} map[string]interface{} "Login successful"
+// @Failure 400 {object} map[string]string "Invalid request body" (when the request body does not contain valid JSON or is missing required fields)
+// @Failure 401 {object} map[string]string "Unauthorized" (when the provided credentials are incorrect)
+// @Failure 500 {object} map[string]string "Failed to create JWT token" (when there is an error creating the JWT token)
+// @Failure 500 {object} map[string]string "Failed to update access token" (when there is an error updating the access token in the database)
 // @Router /login [post]
-// Fungsi untuk handle login
 func Login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var user m.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
@@ -133,6 +142,13 @@ func Login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	json.NewEncoder(w).Encode(response)
 }
 
+// @Summary Get users
+// @Description Get a list of users with limited information based on the user's role
+// @Security ApiKeyAuth
+// @Success 200 {object} []m.UserResponse "List of users"
+// @Failure 401 {object} map[string]string "Unauthorized" (when the provided JWT token is invalid or missing)
+// @Failure 500 {object} map[string]string "Internal server error" (when there is a problem with the database)
+// @Router /users [get]
 func GetUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	claims, err := h.Authenticate(r)
 	if err != nil {
@@ -145,11 +161,6 @@ func GetUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		http.Error(w, "Invalid token claims", http.StatusUnauthorized)
 		return
 	}
-
-	// Implement logic to filter data based on user ID or any other criteria, if needed.
-	// For example:
-	// userID := int(claims["id"].(float64))
-	// rows, err := d.Db.Query("SELECT name, role_id FROM users WHERE id = ?", userID)
 	rows, err := d.Db.Query("SELECT name, role_id FROM users")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -170,6 +181,17 @@ func GetUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	json.NewEncoder(w).Encode(users)
 }
 
+// @Summary Get user details
+// @Description Get detailed information about a specific user (only accessible by admin)
+// @Param id path int true "User ID to be retrieved"
+// @Security ApiKeyAuth
+// @Success 200 {object} m.User "User details"
+// @Failure 400 {object} map[string]string "Invalid userID" (when the provided user ID in the URL is not a valid integer)
+// @Failure 401 {object} map[string]string "Unauthorized" (when the provided JWT token is invalid or missing)
+// @Failure 403 {object} map[string]string "Access denied" (when the user does not have admin role)
+// @Failure 404 {object} map[string]string "User not found" (when the requested user ID does not exist in the database)
+// @Failure 500 {object} map[string]string "Internal server error" (when there is a problem with the database)
+// @Router /users/{id} [get]
 func GetUserDetail(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 	userID, err := strconv.Atoi(ps.ByName("id"))
@@ -210,6 +232,11 @@ func GetUserDetail(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 // @Param id path int true "User ID to be deleted"
 // @Security ApiKeyAuth
 // @Success 200 {object} map[string]string "User successfully deleted"
+// @Failure 400 {object} map[string]string "Invalid userID" (when the provided user ID in the URL is not a valid integer)
+// @Failure 401 {object} map[string]string "Unauthorized" (when the provided JWT token is invalid or missing)
+// @Failure 403 {object} map[string]string "Access denied" (when the user does not have admin role)
+// @Failure 404 {object} map[string]string "User not found" (when the requested user ID does not exist in the database)
+// @Failure 500 {object} map[string]string "Internal server error" (when there is a problem with the database)
 // @Router /users/{id} [delete]
 func DeleteUser(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
@@ -253,6 +280,15 @@ func DeleteUser(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	json.NewEncoder(w).Encode(response)
 }
 
+// @Summary Update user
+// @Description Update user data (name and password)
+// @Security ApiKeyAuth
+// @Param user body m.User true "User object that contains updated user data"
+// @Success 200 {object} map[string]interface{} "User data updated"
+// @Failure 400 {object} map[string]string "Invalid request body" (when the request body does not contain valid JSON or is missing required fields)
+// @Failure 401 {object} map[string]string "Unauthorized" (when the provided JWT token is invalid or missing)
+// @Failure 500 {object} map[string]string "Internal server error" (when there is a problem with the database)
+// @Router /users [put]
 func UpdateUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var user m.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
@@ -308,6 +344,13 @@ func UpdateUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	json.NewEncoder(w).Encode(response)
 }
 
+// @Summary Logout user
+// @Description Log out user by clearing the access token
+// @Security ApiKeyAuth
+// @Success 200 {object} map[string]string "Logout successful"
+// @Failure 401 {object} map[string]string "Unauthorized" (when the provided JWT token is invalid or missing)
+// @Failure 500 {object} map[string]string "Internal server error" (when there is a problem with the database)
+// @Router /logout [post]
 func Logout(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	claims, err := h.Authenticate(r)
 	if err != nil {

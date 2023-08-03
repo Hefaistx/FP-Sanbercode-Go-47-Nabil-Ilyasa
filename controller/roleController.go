@@ -15,9 +15,14 @@ import (
 
 // @Summary Create new role
 // @Description Create a new role with the specified role name
-// @Param role body Role true "Role object that needs to be created"
+// @Param role body m.Role true "Role object that needs to be created"
 // @Security ApiKeyAuth
 // @Success 200 {object} map[string]interface{} "Role created"
+// @Failure 400 {object} map[string]string "Invalid request body"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 403 {object} map[string]string "Access denied"
+// @Failure 409 {object} map[string]string "Role already exists"
+// @Failure 500 {object} map[string]string "Internal server error"
 // @Router /role [post]
 func CreateRole(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var role m.Role
@@ -76,6 +81,13 @@ func CreateRole(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	json.NewEncoder(w).Encode(response)
 }
 
+// @Summary Get all roles
+// @Description Get a list of all roles
+// @Security ApiKeyAuth
+// @Success 200 {object} []m.Role "List of roles"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /role [get]
 func GetRole(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	claims, err := h.Authenticate(r)
 	if err != nil {
@@ -88,10 +100,6 @@ func GetRole(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 
-	// Implement logic to filter data based on user ID or any other criteria, if needed.
-	// For example:
-	// userID := int(claims["id"].(float64))
-	// rows, err := d.Db.Query("SELECT name, role_id FROM users WHERE id = ?", userID)
 	rows, err := d.Db.Query("SELECT id, role_name FROM roles")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -117,6 +125,11 @@ func GetRole(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 // @Param id path int true "Role ID to delete"
 // @Security ApiKeyAuth
 // @Success 200 {object} map[string]string "Role successfully deleted"
+// @Failure 400 {object} map[string]string "Invalid role ID"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 403 {object} map[string]string "Access denied"
+// @Failure 404 {object} map[string]string "Role not found"
+// @Failure 500 {object} map[string]string "Internal server error"
 // @Router /role/{id} [delete]
 func DeleteRole(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
