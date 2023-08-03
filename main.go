@@ -15,7 +15,7 @@ func main() {
 	router.POST("/user/login", c.Login)
 	router.GET("/user", c.GetUser)
 	router.GET("/user/:id", c.GetUserDetail)
-	router.POST("user/:id", c.UpdateUser)
+	router.POST("/user/:id", c.UpdateUser)
 	router.DELETE("/user/:id", c.DeleteUser)
 	//Role
 	router.POST("/role", c.CreateRole)
