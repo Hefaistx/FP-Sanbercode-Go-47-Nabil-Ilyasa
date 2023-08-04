@@ -235,7 +235,7 @@ func GetReview(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 // @Failure 500 {object} map[string]string "Internal server error" (when there is a problem with the database)
 // @Router /review/{id} [delete]
 func DeleteReview(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	userID, err := strconv.Atoi(ps.ByName("id"))
+	userID, err := strconv.Atoi(ps.ByName("uid"))
 	if err != nil {
 		http.Error(w, "Invalid id", http.StatusBadRequest)
 		return

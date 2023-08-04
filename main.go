@@ -13,9 +13,10 @@ func main() {
 	//User
 	router.POST("/user", c.Register)
 	router.POST("/user/login", c.Login)
+	router.POST("/user/logout", c.Logout)
 	router.GET("/user", c.GetUser)
-	router.GET("/user/:id", c.GetUserDetail)
-	router.POST("/user/:id", c.UpdateUser)
+	router.GET("/user/detail/:id", c.GetUserDetail)
+	router.POST("/user/update/:id", c.UpdateUser)
 	router.DELETE("/user/:id", c.DeleteUser)
 	//Role
 	router.POST("/role", c.CreateRole)
@@ -24,19 +25,19 @@ func main() {
 	//Game
 	router.POST("/game", c.AddGame)
 	router.GET("/games", c.GetGames)
-	router.GET("/game/:id", c.GetGameDetail)
-	router.POST("/game/:id", c.UpdateGame)
+	router.GET("/game-detail/:id", c.GetGameDetail)
+	router.POST("/game-update/:id", c.UpdateGame)
 	router.DELETE("/game/:id", c.DeleteGame)
 	//Review
 	router.POST("/game/review", c.AddReview)
 	router.GET("/game/reviews", c.GetReview)
-	router.POST("/game/review:id", c.UpdateReview)
-	router.DELETE("/game/review/:id", c.DeleteReview)
+	router.POST("/review/:id", c.UpdateReview)
+	router.DELETE("/review/:uid", c.DeleteReview)
 	//Wishlist
-	router.POST("/game/wish", c.AddWish)
-	router.GET("/game/wish", c.GetWish)
-	router.DELETE("/game/wish", c.DeleteWish)
-	http.ListenAndServe(":8080", router)
+	router.POST("/game-wish", c.AddWish)
+	router.GET("/game-wish", c.GetWish)
+	router.DELETE("/game-wish/delete/:id", c.DeleteWish)
 	//Root
-	http.HandleFunc("/", d.RootHandler)
+	router.GET("/", d.RootHandler)
+	http.ListenAndServe(":8080", router)
 }

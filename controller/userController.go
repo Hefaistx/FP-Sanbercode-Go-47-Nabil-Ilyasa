@@ -323,6 +323,12 @@ func UpdateUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	}
 
 	createdAt := m.NewMySQLTime(time.Now())
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	if err != nil {
+		http.Error(w, "Failed to hash password", http.StatusInternalServerError)
+		return
+	}
+	user.Password = string(hashedPassword)
 
 	_, err = d.Db.Exec("UPDATE users SET name = ?, password = ?, updated_at = ? WHERE id = ?",
 		user.Name, user.Password, createdAt, userID)

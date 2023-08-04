@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/julienschmidt/httprouter"
 )
 
 var Db *sql.DB
@@ -25,6 +26,6 @@ func init() {
 	fmt.Println("Connected to MySQL database!")
 }
 
-func RootHandler(w http.ResponseWriter, r *http.Request) {
+func RootHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	fmt.Fprint(w, "Connected to MySQL database!")
 }

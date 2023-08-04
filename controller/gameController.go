@@ -257,7 +257,7 @@ func UpdateGame(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 	response := map[string]interface{}{
 		"message": "Game data updated",
-		"review":  existingGame,
+		"review":  game,
 	}
 
 	w.Header().Set("Content-Type", "application/json")

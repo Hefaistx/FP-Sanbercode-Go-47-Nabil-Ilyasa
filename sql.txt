@@ -1,13 +1,13 @@
 CREATE TABLE roles (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    role_name VARCHAR(255) NOT NULL,
+    role_name VARCHAR(255) NOT NULL UNIQUE,
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL
 );
 
 CREATE TABLE users (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    email VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
     name VARCHAR(255) NOT NULL,
     password VARCHAR(255) NOT NULL,
     role_id INT,
@@ -43,9 +43,15 @@ CREATE TABLE reviews (
 CREATE TABLE wishlists (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT,
-    game_id INT,
+    game_id INT UNIQUE,
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (game_id) REFERENCES games(id)
 );
+
+Conn:
+IP: 34.128.105.170
+Port: 3306
+User: Admin
+Password: Admin123
