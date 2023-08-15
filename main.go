@@ -5,6 +5,8 @@ import (
 	d "final-project/db"
 	"net/http"
 
+	_ "final-project/docs"
+
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -39,5 +41,7 @@ func main() {
 	router.DELETE("/game-wish/delete/:id", c.DeleteWish)
 	//Root
 	router.GET("/", d.RootHandler)
+	// Swagger UI files
+	router.ServeFiles("/swagger/*filepath", http.Dir("./docs"))
 	http.ListenAndServe(":8080", router)
 }

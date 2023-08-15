@@ -1,0 +1,11 @@
+1. Menjelaskan layout, sprites, flow, sampai variabel yang dipakai
+2. Kesulitan: 	- Kesulitan menyusun map
+		- Gagal membuat map yang eye catching
+		- Sejumlah behaviour kadang bentrok
+		- Beberapa fitur perlu dibuat manual mekaniknya 		  meskipun tersedia bawaan (movement)
+		- Event terbatas
+		- Ada semacam bug yang membuat properties 			  sprites tidak terbaca
+
+3. Kesalahan:	- Collision dengan temboknya tidak sempurna
+		- Movement tidak tertangani dengan sempurna
+		- Tidak bisa melimit turn pada battle phase
